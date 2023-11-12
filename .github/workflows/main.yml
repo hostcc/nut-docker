@@ -2,8 +2,15 @@
 name: main
 
 on:
-  release:
-    types: [published]
+  push:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Upstream version to build container for (object SHA is also
+          accepted), defaults to latest release
+        required: false
+        type: string
 
 jobs:
   docker-publish:
@@ -14,12 +21,23 @@ jobs:
       packages: write
     # Publishing Docker images only happens when a release published out of the
     # main branch
-    if: >-
-      github.event_name == 'release'
-      && github.event.action == 'published'
-      && (github.event.release.target_commitish == 'main'
-         || github.event.release.target_commitish == 'master')
     steps:
+      - name: Determine upstream version
+        id: upstream-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          if test -z "${{ inputs.version }}"; then
+            # Pick version from latest release
+            latest_version=$(gh release view \
+             --repo networkupstools/nut \
+             --json tagName --jq '.|to_entries[]|.value')
+          else
+            # Pick user supplied version
+            latest_version="${{ inputs.version }}"
+          fi
+          echo "value=$latest_version" >> "$GITHUB_OUTPUT"
+
       - name: Checkout the code
         uses: actions/checkout@v3
 
@@ -40,6 +58,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          build-args: |-
+            NUT_GITREF=${{ steps.upstream-version.outputs.value }}
           platforms: linux/arm/v7,linux/arm/v6,linux/arm64
           push: true
           tags:
@@ -48,4 +68,4 @@ jobs:
 
             ghcr.io/${{ github.repository_owner }}\
             /${{ github.event.repository.name }}\
-            :${{ github.event.release.tag_name }}"
+            :${{ steps.upstream-version.outputs.value }}"
