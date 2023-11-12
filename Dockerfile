@@ -22,7 +22,7 @@ RUN apk add -U \
 	libusb-dev neon-dev libmodbus-dev nss-dev net-snmp-dev
 
 RUN \
-	git clone --depth=1 https://github.com/networkupstools/nut.git ${NUT_DIR} \
+	git clone https://github.com/networkupstools/nut.git ${NUT_DIR} \
 	&& cd ${NUT_DIR} \
 	&& git checkout ${NUT_GITREF} \
 	&& ./autogen.sh \
@@ -67,7 +67,7 @@ ARG NUT_GROUP
 ARG NUT_GID
 ARG NUT_RUNDIR
 
-RUN apk add -U libusb libltdl neon nss net-snmp-libs libmodbus eudev hidapi
+RUN apk -U upgrade && apk add -U libusb libltdl neon nss net-snmp-libs libmodbus eudev hidapi
 
 COPY --from=build ${DIST_DIR}/etc/ /etc/
 COPY --from=build ${DIST_DIR}/usr/lib/ /usr/lib/
