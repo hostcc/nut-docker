@@ -84,4 +84,15 @@ RUN \
   && chown ${NUT_USER}:${NUT_GROUP} ${NUT_RUNDIR} \
   && chmod 0750 ${NUT_RUNDIR}
 
+# Simple healthcheck to iterate over configured UPS'es attempting to fetch
+# `driver.name` variable and exit on first failure setting up exit status = 1
+HEALTHCHECK CMD \
+	for ups in `upsc -l`; do \
+		rc=1; \
+		upsc $ups driver.name; \
+		test $? -ne 0 && break; \
+		rc=0; \
+	done; \
+	exit $rc
+
 CMD upsdrvctl start && upsd -F
