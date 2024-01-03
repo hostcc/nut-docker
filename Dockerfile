@@ -67,7 +67,8 @@ ARG NUT_GROUP
 ARG NUT_GID
 ARG NUT_RUNDIR
 
-RUN apk -U upgrade && apk add -U libusb libltdl neon nss net-snmp-libs libmodbus eudev hidapi
+# `bash` is used by `entrypoint.sh`
+RUN apk -U upgrade && apk add -U libusb libltdl neon nss net-snmp-libs libmodbus eudev hidapi bash
 
 COPY --from=build ${DIST_DIR}/etc/ /etc/
 COPY --from=build ${DIST_DIR}/usr/lib/ /usr/lib/
@@ -95,4 +96,6 @@ HEALTHCHECK CMD \
 	done; \
 	exit $rc
 
-CMD upsdrvctl start && upsd -F
+ADD --chmod=0755 entrypoint.sh /
+
+CMD ["/entrypoint.sh"]
